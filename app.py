@@ -1,12 +1,18 @@
 import streamlit as st
 import pyperclip
-
 from database import (
+    conectar,
     criar_tabela,
+    criar_tabela_master,
+    salvar_master,
+    validar_master,
     adicionar,
     listar,
     excluir
 )
+
+criar_tabela()
+criar_tabela_master()
 
 from crypto import (
     criptografar,
@@ -14,29 +20,87 @@ from crypto import (
 )
 
 criar_tabela()
+conn = conectar()
+cursor = conn.cursor()
 
-st.set_page_config(
-    page_title="PassLock",
-    page_icon="🔒",
-    layout="wide"
+cursor.execute(
+    "SELECT COUNT(*) FROM configuracao"
 )
+
+existe_master = cursor.fetchone()[0]> 0
+
+conn.close()
+if not existe_master:
+
+    st.title("🔐 Criar Senha Mestra")
+
+    senha1 = st.text_input(
+        "Senha Mestra",
+        type="password",
+        key="senha1"
+    )
+
+    senha2 = st.text_input(
+        "Confirmar Senha",
+        type="password",
+        key="senha2"
+    )
+
+    if st.button(
+        "Criar senha mestra",
+        key="criar_master"
+    ):
+
+        if len(senha1.strip()) < 8:
+            st.error(
+                "A senha deve ter no mínimo 8 caracteres."
+            )
+
+        elif senha1 != senha2:
+            st.error(
+                "As senhas não coincidem."
+            )
+
+        else:
+            salvar_master(senha1)
+
+            st.success(
+                "Senha mestra criada com sucesso!"
+            )
+
+            st.rerun()
+
+    st.stop()
 
 st.title("🔒 PassLock")
 
-if "master" not in st.session_state:
-    st.session_state.master = ""
+if "autenticado" not in st.session_state:
+    st.session_state.autenticado = False
 
-senha_mestra = st.text_input(
-    "Senha Mestra",
-    type="password"
-)
+if not st.session_state.autenticado:
 
-if senha_mestra:
-    st.session_state.master = senha_mestra
+    senha_mestra = st.text_input(
+        "Senha Mestra",
+        type="password"
+    )
 
-    st.subheader("Nova Credencial")
+    if st.button("Entrar"):
 
-    with st.form("cadastro"):
+        if validar_master(senha_mestra):
+            st.session_state.autenticado = True
+            st.session_state.master = senha_mestra
+            st.rerun()
+        else:
+            st.error("Senha mestra inválida")
+
+        st.stop()
+
+# DAQUI PARA BAIXO O USUÁRIO JÁ ESTÁ LOGADO
+
+senha_mestra = st.session_state.master
+
+st.subheader("Nova Credencial")
+with st.form("cadastro"):
         servico = st.text_input("Serviço")
         usuario = st.text_input("Usuário")
         senha = st.text_input("Senha", type="password")
@@ -60,13 +124,14 @@ if senha_mestra:
 
             st.success("Registro salvo!")
 
-    st.divider()
+    
+st.divider()
 
-    st.subheader("Credenciais")
+st.subheader("Credenciais")
 
-    registros = listar()
+registros = listar()
 
-    for item in registros:
+for item in registros:
 
         id_, servico, usuario, senha, obs = item
 
