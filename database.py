@@ -1,8 +1,13 @@
 import sqlite3
 import hashlib
+import sqlite3
+import hashlib
+import os
+import os
+
+os.makedirs("data", exist_ok=True)
 
 DB_NAME = "data/passlock.db"
-
 
 def conectar():
     return sqlite3.connect(DB_NAME)

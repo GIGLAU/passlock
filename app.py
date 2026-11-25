@@ -76,7 +76,8 @@ st.title("🔒 PassLock")
 
 if "autenticado" not in st.session_state:
     st.session_state.autenticado = False
-
+if "master" not in st.session_state:
+    st.session_state.master = ""
 if not st.session_state.autenticado:
 
     senha_mestra = st.text_input(
@@ -94,11 +95,12 @@ if not st.session_state.autenticado:
             st.error("Senha mestra inválida")
 
         st.stop()
-
+if validar_master(senha_mestra):
+    st.session_state.autenticado = True
+    st.session_state.master = senha_mestra
+    st.rerun()
 # DAQUI PARA BAIXO O USUÁRIO JÁ ESTÁ LOGADO
-
-senha_mestra = st.session_state.master
-
+senha_mestra = st.session_state.get("master", "")
 st.subheader("Nova Credencial")
 with st.form("cadastro"):
         servico = st.text_input("Serviço")
